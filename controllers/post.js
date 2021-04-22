@@ -77,7 +77,8 @@ exports.removeAll=async(req,res)=>{
 
 exports.crawl=async (req,res)=>{
     const {title,content,user}=req.body
-    let urls=['/in/stefanhyltoft']
+    let urls=['/in/ajrobbins/']
+    urls.push('/in/daymondjohn/')
     
     // let linksToVisit
     let visitedLinks=[]
@@ -103,18 +104,23 @@ exports.crawl=async (req,res)=>{
         //     urls=posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>el.title) 
         // })
         // 
-        const currentUrl=urls.pop()
+        const currentUrl=urls.shift()
         if(visitedLinks.includes(currentUrl))continue
         await page.goto('https://www.linkedin.com'+currentUrl)
         await sleep(5000)
         const html =await page.content()
         const $=cheerio.load(html)
+        // document.querySelectorAll('.pv-top-card__photo')
+        const img=$('.pv-top-card__photo')[0]
+        // console.log('img Node:',img.Node)
+        // console.log('img title:',img.title)
         const newLinkToVisit=$('.pv-browsemap-section__member').map((index,element)=>$(element).attr('href')).get()
         // console.log(linksToVisit)
         newLinkToVisit.forEach(async(el)=>{
             let title,content,user ;//req.params
             title=el
             content='121'
+            user='false'
             const slug=slugify(title)
 // validate
 switch(true){
@@ -132,18 +138,40 @@ await Post.create({title,content,user,slug},(err,post)=>{
         // res.status(400).json({error:'Duplicate post. try another title'})
     }
     else{
+        console.log('Create!')
         console.log('url:',post.title)
     }
     // res.json(post)
 })
         })
         // linksToVisit=[...linksToVisit,...newLinkToVisit]
-        visitedLinks.push(currentUrl)
+        // visitedLinks.push(currentUrl)
         // here
-        await Post.find({}).exec((err,posts)=>{
+        const filter = { title: currentUrl };
+        const update = { user: 'true' };
+
+// `doc` is the document _after_ `update` was applied because of
+// `returnOriginal: false`
+        let doc = await Post.findOneAndUpdate(filter, update, {
+            new:true,
+        returnOriginal: false
+        });
+        console.log(doc)
+
+        await Post.find({user:'false'},(err,posts)=>{
+            // console.log('Find!')
             if(err)console.log(err)
+            // console.log('before',urls)
             // sort and map the urls
+            // sleep(10000)
             urls=posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>el.title) 
+            // console.log('url end:',urls)
+            // adding a url beaceuse the find function is running before the create function
+            // if(!urls.includes('/in/thejlo/')){
+            //     urls.push('/in/thejlo/')
+            // }
+            console.log('url!!!',urls)
+            // posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>console.log(el.title))
         })
         // 
         await sleep(2000)
