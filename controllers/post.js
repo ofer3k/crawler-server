@@ -93,34 +93,36 @@ exports.crawl=async (req,res)=>{
     // insert auth of user
     await page.type('#username','ofer3klein@gmail.com')
     await page.type('#password','ofer3k1998')
-    
+    await page.setDefaultNavigationTimeout(0);
     await page.click('.btn__primary--large.from__button--floating')
-    await sleep(3200)
-    while(urls.length>0){
-        // fetch all url from db
-        // await Post.find({}).exec((err,posts)=>{
-        //     if(err)console.log(err)
-        //     // sort and map the urls
-        //     urls=posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>el.title) 
-        // })
-        // 
+    
+    do {
         const currentUrl=urls.shift()
-        if(visitedLinks.includes(currentUrl))continue
+        const filter = { title: currentUrl };
+        const update = { user: 'true' };
+
+        await Post.findOneAndUpdate(filter, update, {
+            new:true,
+        returnOriginal: false
+        });
+        await sleep(1200)
         await page.goto('https://www.linkedin.com'+currentUrl)
-        await sleep(5000)
+        await sleep(13000)
         const html =await page.content()
         const $=cheerio.load(html)
-        // document.querySelectorAll('.pv-top-card__photo')
-        const img=$('.pv-top-card__photo')[0]
-        // console.log('img Node:',img.Node)
-        // console.log('img title:',img.title)
+        // let pageTitle = $('title').text();
+
         const newLinkToVisit=$('.pv-browsemap-section__member').map((index,element)=>$(element).attr('href')).get()
-        // console.log(linksToVisit)
+        console.log(newLinkToVisit)
         newLinkToVisit.forEach(async(el)=>{
             let title,content,user ;//req.params
+            // the  end of the url to keep the crawling
             title=el
-            content='121'
+            // the full url to present in the front
+            content='pageTitle'
+            // isBeen visited already? to change after the visit
             user='false'
+            // just a slug
             const slug=slugify(title)
 // validate
 switch(true){
@@ -135,47 +137,31 @@ switch(true){
 await Post.create({title,content,user,slug},(err,post)=>{
     if(err){
         console.log(err)
-        // res.status(400).json({error:'Duplicate post. try another title'})
     }
     else{
         console.log('Create!')
         console.log('url:',post.title)
     }
-    // res.json(post)
 })
         })
-        // linksToVisit=[...linksToVisit,...newLinkToVisit]
-        // visitedLinks.push(currentUrl)
-        // here
-        const filter = { title: currentUrl };
-        const update = { user: 'true' };
 
-// `doc` is the document _after_ `update` was applied because of
-// `returnOriginal: false`
-        let doc = await Post.findOneAndUpdate(filter, update, {
-            new:true,
-        returnOriginal: false
-        });
-        console.log(doc)
-
+      await  sleep(10000)
+      console.log(newLinkToVisit)
         await Post.find({user:'false'},(err,posts)=>{
             // console.log('Find!')
             if(err)console.log(err)
-            // console.log('before',urls)
-            // sort and map the urls
-            // sleep(10000)
+            
             urls=posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>el.title) 
-            // console.log('url end:',urls)
-            // adding a url beaceuse the find function is running before the create function
-            // if(!urls.includes('/in/thejlo/')){
-            //     urls.push('/in/thejlo/')
-            // }
+           
             console.log('url!!!',urls)
-            // posts.sort(function(a,b){return a.createdAt - b.createdAt}).map((el)=>console.log(el.title))
+       
         })
         // 
-        await sleep(2000)
-    }
+        await sleep(1000)
+        
+    } while (urls.length>0);
+  
+    
     
     // console.log(title,content,user)
     res.json({
@@ -183,6 +169,9 @@ await Post.create({title,content,user,slug},(err,post)=>{
     })
 }
 const sleep = (milliseconds) => {
-    return new Promise(resolve => setTimeout(resolve, milliseconds))
+    return new Promise(resolve => {
+        console.log('sleeping for -',milliseconds/1000, ' secondes')
+        setTimeout(resolve, milliseconds)
+    })
   }
   
