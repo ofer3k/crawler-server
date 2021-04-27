@@ -11,7 +11,7 @@ const postRoutes=require('./routes/post')
 const app=express()
 
 // db
-mongoose.connect(process.env.DATABASE,{
+mongoose.connect('mongodb+srv://ofer3k:ofer3k1998@react-crud.ddpml.mongodb.net/myFirstDatabase2?retryWrites=true&w=majority',{
     useNewUrlParser:true,
     useCreateIndex:true,
     useFindAndModify:false,
